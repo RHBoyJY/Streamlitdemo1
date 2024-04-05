@@ -21,6 +21,7 @@ dataset_name = st.sidebar.selectbox("Select Dataset", ("Iris", "Breast Cancer", 
 classifier = st.sidebar.selectbox("Select Classifiers", ("KNN", "SVM", "Random Forest"))
 
 scaling = st.sidebar.checkbox("Scaling?")
+ShowData = st.sidebar.checkbox("Show Data ?")
 
 # Get the data 
 X, y = utilities.get_dataset(dataset_name)
@@ -45,3 +46,7 @@ st.write("**Accuracy:** ", accuracy)
 
 # Plot the components of the data 
 utilities.plot_data(X, y)
+
+if ShowData:
+	st.write(X)
+	#st.write(y)
