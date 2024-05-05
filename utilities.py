@@ -9,13 +9,14 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.svm import SVC 
 from sklearn.model_selection import train_test_split
 from sklearn.decomposition import PCA
+from sklearn.preprocessing import MinMaxScaler
 import matplotlib.pyplot as plt 
 
 # Function to get the datasets 
 def get_dataset(name):
 	'''
 		Function which 
-returns Cla X 
+		returns Cla X 
 		and targets as y based on the dataset name
 		ARGS: pulation sidebar
 		RETURNS: Features and Labels
