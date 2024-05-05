@@ -2,8 +2,6 @@
 # Import libraries 
 import pandas as pd 
 import streamlit as st
-import matplotlib.pyplot as plt 
-
 from sklearn import datasets
 from sklearn.metrics import accuracy_score
 from sklearn.neighbors import KNeighborsClassifier
@@ -11,14 +9,15 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.svm import SVC 
 from sklearn.model_selection import train_test_split
 from sklearn.decomposition import PCA
-from sklearn.preprocessing import MinMaxScaler
+import matplotlib.pyplot as plt 
 
 # Function to get the datasets 
 def get_dataset(name):
 	'''
-		Function which returns the features as X 
+		Function which 
+returns Cla X 
 		and targets as y based on the dataset name
-		ARGS: dataset name
+		ARGS: pulation sidebar
 		RETURNS: Features and Labels
 	'''
 
@@ -42,11 +41,9 @@ def scale_data(X):
 
 # Function to add UI characterstics for each classifier
 def add_parameter_ui(clf_name): 
-
 	'''
 		Classifier_name --> Classifier parameters
 	'''
-
 	params = dict()
 	
 	if clf_name == 'KNN':
