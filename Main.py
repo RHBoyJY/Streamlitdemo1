@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 # Load questionnaire
 @st.cache_data
 def load_questions():
-    df = pd.read_excel(".\DISC_Questionnaire_Bilingual_Reformat.xlsx")
+    df = pd.read_excel('DISC_Questionnaire_Bilingual_Reformat.xlsx')
     questions = df.groupby("Q#").apply(
         lambda group: {
             "question_zh": group["Question_ZH"].iloc[0],
