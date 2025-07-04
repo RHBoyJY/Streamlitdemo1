@@ -1,48 +1,74 @@
-# Import necessary libraries 
-import numpy as np
 import streamlit as st
-import utilities  # utilities 模組用於處理資料集和機器學習相關功能的輔助函式。
+import pandas as pd
+import matplotlib.pyplot as plt
 
-# Set a title 
-st.title("Machine Learning Streamlit App")  # 設置應用程式的標題為"Machine Learning Streamlit App"。
+# Load questionnaire
+@st.cache_data
+def load_questions():
+    df = pd.read_excel("DISC_Questionnaire_Bilingual_Reformat.xlsx")
+    questions = df.groupby("Q#").apply(
+        lambda group: {
+            "question_zh": group["Question_ZH"].iloc[0],
+            "question_en": group["Question_EN"].iloc[0],
+            "options": list(zip(group["Option_Text"], group["DISC_Type"]))
+        }
+    ).tolist()
+    return questions
 
-# Add text to the app 
-st.write("""
-## 探索不同的分類方法		 
-在左側更改 分類方法 或 Dataset 以查看不同模型的性能。
-""")  # 在應用程式中添加文字，介紹用戶可以探索不同分類方法的功能。
+questions = load_questions()
 
-# Add a select box widget to the side 
-dataset_name = st.sidebar.selectbox("Select Dataset", ("Iris", "Breast Cancer", "Wine"))  # 在側邊欄添加一個下拉選單，讓用戶選擇資料集。
-classifier = st.sidebar.selectbox("Select Classifiers", ("KNN", "SVM", "Random Forest"))  # 在側邊欄添加一個下拉選單，讓用戶選擇分類器。
-scaling = st.sidebar.checkbox("Scaling?")  # 在側邊欄添加一個核取方塊，讓用戶選擇是否要對數據進行縮放。
-ShowData = st.sidebar.checkbox("Show Data ?")  # 在側邊欄添加一個核取方塊，讓用戶選擇是否要顯示數據。
-# Get the data 
-X, y = utilities.get_dataset(dataset_name)  # 從 utilities 模組中獲取所選擇的資料集。
-col1  , col2 = st.columns([1,3])  # 將應用程式分為兩列。
-with col1:  # 在第一列中顯示資料的大小。
-	st.write("Shape of the data:", X.shape)  # 在應用程式中顯示資料的大小。
-	st.write("Number of Classes:", len(np.unique(y)))  # 在應用程式中顯示類別的種類。
+st.title("DISC Personality Test 測驗")
+st.markdown("請依據每題的描述選擇最符合你的選項，最後會給你一份雷達圖分析結果。")
 
-	# Add parameters to the UI based on the classifier
-	params = utilities.add_parameter_ui(classifier)  # 根據所選的分類器，在UI上添加相應的參數。
-	st.write("**params:** ", params)  # 在應用程式中顯示參數。
+responses = []
 
-	# Get our classifier with the correct classifiers 
-	clf = utilities.get_classifier(classifier, params)  # 從 utilities 模組中獲取所選的分類器。
+with st.form("disc_form"):
+    for i, q in enumerate(questions):
+        st.markdown(f"### Q{i+1}: {q['question_zh']}")
+        choice = st.radio("", [opt[0] for opt in q["options"]], key=f"q{i}")
+        responses.append(choice)
+    submitted = st.form_submit_button("提交測驗")
 
-	# Check if scaling is required 
-	if scaling:
-		X = utilities.scale_data(X)  # 如果用戶選擇了縮放，則對數據進行縮放。
+if submitted:
+    df = pd.read_excel("DISC_Questionnaire_Bilingual_Reformat.xlsx")
+    score = {"D": 0, "I": 0, "S": 0, "C": 0}
+    for r in responses:
+        disc_type = df[df["Option_Text"] == r]["DISC_Type"].values[0]
+        score[disc_type] += 1
 
-	# Make predictions and get accuray 
-	accuracy = utilities.classification(X, y, clf)  # 進行分類並獲取準確度。
-	st.write("**Classifer:** ", classifier)  # 在應用程式中顯示所選的分類方法。
-	st.write("**Accuracy:** ", accuracy)  # 在應用程式中顯示準確度。
+    # Display radar chart
+    st.subheader("你的DISC測驗結果如下：")
+    labels = list(score.keys())
+    values = list(score.values())
+    values += values[:1]  # close the radar chart
+    labels += labels[:1]
 
-with col2:
-	# Plot the components of the data 
-	utilities.plot_data(X, y)  # 繪製資料的組件。
+    fig, ax = plt.subplots(subplot_kw={'polar': True})
+    theta = [n / float(len(labels)) * 2 * 3.14159 for n in range(len(labels))]
+    ax.plot(theta, values)
+    ax.fill(theta, values, alpha=0.3)
+    ax.set_xticks(theta[:-1])
+    ax.set_xticklabels(labels[:-1])
+    st.pyplot(fig)
 
-if ShowData:
-	st.write(X)  # 如果用戶選擇了顯示數據，則在應用程式中顯示數據。
+    # Interpretation
+    sorted_types = sorted(score.items(), key=lambda x: x[1], reverse=True)
+    main, sub = sorted_types[0][0], sorted_types[1][0]
+    st.write(f"**主風格**: {main} | **次風格**: {sub}")
+
+    explanations = {
+        "D": "主導型：重視結果，喜歡掌控，直來直往",
+        "I": "影響型：喜歡互動與表達，樂觀、有感染力",
+        "S": "穩定型：重視關係，耐心傾聽，注重協調",
+        "C": "謹慎型：重視品質與細節，邏輯思考，謹慎行事"
+    }
+
+    suggestions = {
+        "D": "建議卡：避免過度強勢，傾聽他人意見，有助於團隊合作。",
+        "I": "建議卡：注意實際執行與時間管理，避免過度樂觀。",
+        "S": "建議卡：勇於表達立場，適時接受變化，有助於發展潛力。",
+        "C": "建議卡：避免過度完美主義，放寬對他人的標準，更易建立關係。"
+    }
+
+    st.markdown(f"**個人特質說明**：{explanations[main]}")
+    st.markdown(f"**建議卡**：{suggestions[main]}")
